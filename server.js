@@ -11,29 +11,23 @@ const app = express();
 // Middleware
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration - secure for production
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('🔍 CORS Request from origin:', origin);
     
-    const allowedOrigins = [
-      'http://localhost:3000',        // React dev server
-      'http://localhost:3001',        // Alternative port
-      'https://premiersquares.com',      // Your production domain
-      'https://www.premiersquares.com'   // Your production domain with www
-    ];
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Allow requests with no origin (mobile apps, etc.)
     if (!origin) {
       console.log('✅ No origin - allowing request');
       return callback(null, true);
     }
     
-    // Allow any local network IP (192.168.x.x or 10.x.x.x)
-    if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):\d+$/)) {
-      console.log('✅ Local network origin allowed:', origin);
-      return callback(null, true);
-    }
+    const allowedOrigins = [
+      'http://localhost:3000',        // Development
+      'http://localhost:3001',        // Development
+      'https://premiersquares.com',   // Production
+      'https://www.premiersquares.com' // Production
+    ];
     
     if (allowedOrigins.includes(origin)) {
       console.log('✅ Origin allowed:', origin);
@@ -43,11 +37,10 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,                // Allow cookies
-  optionsSuccessStatus: 200         // Support legacy browsers
+  credentials: true,
+  optionsSuccessStatus: 200
 };
-// Allow all origins for local development
-app.use(cors());
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
