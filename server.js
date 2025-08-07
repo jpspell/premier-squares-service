@@ -10,7 +10,20 @@ const app = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',        // React dev server
+    'http://localhost:3001',        // Alternative port
+    'https://premiersquares.com',      // Your production domain
+    'https://www.premiersquares.com'   // Your production domain with www
+  ],
+  credentials: true,                // Allow cookies
+  optionsSuccessStatus: 200         // Support legacy browsers
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
