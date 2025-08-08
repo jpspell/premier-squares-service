@@ -68,6 +68,14 @@ const validate = (schema, property = 'body') => {
   return (req, res, next) => {
     const data = req[property];
     
+    // Log the validation attempt
+    logger.info('Starting validation:', {
+      endpoint: req.originalUrl,
+      method: req.method,
+      property: property,
+      data: data
+    });
+    
     // Sanitize the data first
     const sanitizedData = sanitizeInput(data);
     
@@ -83,16 +91,18 @@ const validate = (schema, property = 'body') => {
       const errorDetails = error.details.map(detail => ({
         field: detail.path.join('.'),
         message: detail.message,
-        value: detail.context?.value
+        value: detail.context?.value,
+        type: detail.type
       }));
 
-      logger.warn('Validation failed:', {
+      logger.error('Validation failed:', {
         endpoint: req.originalUrl,
         method: req.method,
         errors: errorDetails,
         ip: req.ip,
         userAgent: req.get('User-Agent'),
-        data: data,
+        originalData: data,
+        sanitizedData: sanitizedData,
         property: property
       });
 
