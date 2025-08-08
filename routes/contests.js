@@ -1,5 +1,6 @@
 const express = require('express');
 const { db } = require('../config/firebase');
+const config = require('../config/config');
 const router = express.Router();
 
 // Validation helper functions
@@ -141,7 +142,7 @@ router.post('/', async (req, res) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to create contest entry',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: config.isDevelopment ? error.message : undefined
     });
   }
 });
@@ -181,7 +182,7 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to fetch contest',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: config.isDevelopment ? error.message : undefined
     });
   }
 });
@@ -254,7 +255,7 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to update contest',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: config.isDevelopment ? error.message : undefined
     });
   }
 });
@@ -329,7 +330,7 @@ router.post('/:id/start', async (req, res) => {
           res.status(500).json({
         error: 'Internal Server Error',
         message: 'Failed to start contest',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: config.isDevelopment ? error.message : undefined
       });
   }
 });

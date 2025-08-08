@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const config = require('./config');
 
 /**
  * Load Firebase service account credentials
@@ -6,7 +7,17 @@ const admin = require('firebase-admin');
  */
 const loadServiceAccount = () => {
   try {
-    // Use JSON file directly (bypass environment variables)
+    // First try environment variables
+    if (config.FIREBASE_PROJECT_ID && config.FIREBASE_PRIVATE_KEY && config.FIREBASE_CLIENT_EMAIL) {
+      console.log('🔐 Loading Firebase credentials from environment variables');
+      return {
+        project_id: config.FIREBASE_PROJECT_ID,
+        private_key: config.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        client_email: config.FIREBASE_CLIENT_EMAIL
+      };
+    }
+    
+    // Fallback to JSON file
     console.log('🔐 Loading Firebase credentials from serviceAccountKey.json');
     return require('../serviceAccountKey.json');
   } catch (error) {
@@ -33,7 +44,7 @@ const initializeFirebase = () => {
     if (serviceAccount) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        databaseURL: process.env.FIREBASE_DATABASE_URL || `https://${serviceAccount.project_id}.firebaseio.com`
+        databaseURL: config.FIREBASE_DATABASE_URL || `https://${serviceAccount.project_id}.firebaseio.com`
       });
       console.log('✅ Firebase initialized successfully');
     } else {

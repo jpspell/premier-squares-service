@@ -1,10 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const config = require('./config/config');
 
-// Constants
-const PORT = process.env.PORT || 3001;
-const API_VERSION = '1.0.0';
+// Validate configuration on startup
+try {
+  config.validateConfig();
+} catch (error) {
+  console.error('❌ Configuration error:', error.message);
+  process.exit(1);
+}
 
 const app = express();
 
@@ -14,45 +19,40 @@ app.use(helmet());
 // CORS configuration - secure for production
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('🔍 CORS Request from origin:', origin);
+    if (config.isDevelopment) {
+      console.log('🔍 CORS Request from origin:', origin);
+    }
     
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) {
-      console.log('✅ No origin - allowing request');
-      return callback(null, true);
-    }
-    
-    const allowedOrigins = [
-      'http://localhost:3000',        // Development
-      'http://localhost:3001',        // Development
-      'https://premiersquares.com',   // Production
-      'https://www.premiersquares.com', // Production
-      'https://z414f9tg84.execute-api.us-east-1.amazonaws.com', // API Gateway
-      'https://z414f9tg84.execute-api.us-east-1.amazonaws.com/prod' // API Gateway with path
-    ];
-    
-    // TEMPORARY: Allow API Gateway requests for debugging
-    if (origin.includes('execute-api.us-east-1.amazonaws.com')) {
-      console.log('✅ API Gateway origin allowed (debug):', origin);
+      if (config.isDevelopment) {
+        console.log('✅ No origin - allowing request');
+      }
       return callback(null, true);
     }
     
     // Check exact match first
-    if (allowedOrigins.includes(origin)) {
-      console.log('✅ Origin allowed:', origin);
+    if (config.CORS_ALLOWED_ORIGINS.includes(origin)) {
+      if (config.isDevelopment) {
+        console.log('✅ Origin allowed:', origin);
+      }
       callback(null, true);
     } else {
       // Check if origin starts with any of our allowed domains
-      const isAllowed = allowedOrigins.some(allowedOrigin => {
+      const isAllowed = config.CORS_ALLOWED_ORIGINS.some(allowedOrigin => {
         return origin.startsWith(allowedOrigin);
       });
       
       if (isAllowed) {
-        console.log('✅ Origin allowed (partial match):', origin);
+        if (config.isDevelopment) {
+          console.log('✅ Origin allowed (partial match):', origin);
+        }
         callback(null, true);
       } else {
-        console.log('❌ Origin blocked:', origin);
-        console.log('🔍 Allowed origins:', allowedOrigins);
+        if (config.isDevelopment) {
+          console.log('❌ Origin blocked:', origin);
+          console.log('🔍 Allowed origins:', config.CORS_ALLOWED_ORIGINS);
+        }
         callback(new Error('Not allowed by CORS'));
       }
     }
@@ -62,8 +62,8 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: config.MAX_REQUEST_SIZE }));
+app.use(express.urlencoded({ extended: true, limit: config.MAX_URL_ENCODED_SIZE }));
 
 // Routes
 const contestsRouter = require('./routes/contests');
@@ -83,16 +83,16 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'Premier Squares Service API',
-    version: API_VERSION,
+    version: config.API_VERSION,
     endpoints: {
       health: '/health',
-              contests: {
-          create: 'POST /contests',
-          getAll: 'GET /contests',
-          getById: 'GET /contests/:id',
-          update: 'PUT /contests/:id',
-          start: 'POST /contests/:id/start'
-        }
+      contests: {
+        create: 'POST /contests',
+        getAll: 'GET /contests',
+        getById: 'GET /contests/:id',
+        update: 'PUT /contests/:id',
+        start: 'POST /contests/:id/start'
+      }
     }
   });
 });
@@ -115,8 +115,10 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(config.PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${config.PORT}`);
+  console.log(`🌍 Environment: ${config.NODE_ENV}`);
+  console.log(`📋 API Version: ${config.API_VERSION}`);
 });
 
 module.exports = app;
