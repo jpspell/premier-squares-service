@@ -9,15 +9,32 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const API_VERSION = process.env.API_VERSION || '1.0.0';
 
 // CORS Configuration
-const CORS_ALLOWED_ORIGINS = process.env.CORS_ALLOWED_ORIGINS 
-  ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : [
-      'http://localhost:3000',        // Development
-      'http://localhost:3001',        // Development
-      'https://premiersquares.com',   // Production
-      'https://www.premiersquares.com', // Production
-      'https://z414f9tg84.execute-api.us-east-1.amazonaws.com/prod' // API Gateway with path
+const getCorsOrigins = () => {
+  // If environment variable is set, use it
+  if (process.env.CORS_ALLOWED_ORIGINS) {
+    return process.env.CORS_ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+  }
+  
+  // Environment-specific defaults
+  if (NODE_ENV === 'production') {
+    return [
+      'https://premiersquares.com',
+      'https://www.premiersquares.com'
     ];
+  } else if (NODE_ENV === 'development') {
+    return [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001'
+    ];
+  } else {
+    // Test environment - no origins allowed
+    return [];
+  }
+};
+
+const CORS_ALLOWED_ORIGINS = getCorsOrigins();
 
 // Firebase Configuration
 const FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL;
@@ -53,8 +70,27 @@ const validateConfig = () => {
     errors.push('NODE_ENV must be development, production, or test');
   }
   
-  if (!CORS_ALLOWED_ORIGINS || CORS_ALLOWED_ORIGINS.length === 0) {
-    errors.push('CORS_ALLOWED_ORIGINS must be provided');
+  // Validate CORS configuration
+  if (NODE_ENV === 'production') {
+    if (!CORS_ALLOWED_ORIGINS || CORS_ALLOWED_ORIGINS.length === 0) {
+      errors.push('CORS_ALLOWED_ORIGINS must be provided in production');
+    }
+    
+    // Validate production origins are HTTPS
+    const nonHttpsOrigins = CORS_ALLOWED_ORIGINS.filter(origin => 
+      origin && !origin.startsWith('https://')
+    );
+    if (nonHttpsOrigins.length > 0) {
+      errors.push(`Non-HTTPS origins not allowed in production: ${nonHttpsOrigins.join(', ')}`);
+    }
+    
+    // Validate no localhost in production
+    const localhostOrigins = CORS_ALLOWED_ORIGINS.filter(origin => 
+      origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))
+    );
+    if (localhostOrigins.length > 0) {
+      errors.push(`Localhost origins not allowed in production: ${localhostOrigins.join(', ')}`);
+    }
   }
   
   if (RATE_LIMIT_WINDOW_MS <= 0) {

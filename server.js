@@ -12,6 +12,7 @@ const {
   detectBots 
 } = require('./middleware/rateLimit');
 const { expressErrorHandler } = require('./utils/errorHandler');
+const { corsMiddleware, additionalCorsHeaders } = require('./middleware/cors');
 
 // Validate configuration on startup
 try {
@@ -40,51 +41,9 @@ app.use(helmet({
   }
 }));
 
-// CORS configuration - secure for production
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (config.isDevelopment) {
-      logger.debug('CORS Request from origin:', origin);
-    }
-    
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) {
-      if (config.isDevelopment) {
-        logger.debug('No origin - allowing request');
-      }
-      return callback(null, true);
-    }
-    
-    // Check exact match first
-    if (config.CORS_ALLOWED_ORIGINS.includes(origin)) {
-      if (config.isDevelopment) {
-        logger.debug('Origin allowed:', origin);
-      }
-      callback(null, true);
-    } else {
-      // Check if origin starts with any of our allowed domains
-      const isAllowed = config.CORS_ALLOWED_ORIGINS.some(allowedOrigin => {
-        return origin.startsWith(allowedOrigin);
-      });
-      
-      if (isAllowed) {
-        if (config.isDevelopment) {
-          logger.debug('Origin allowed (partial match):', origin);
-        }
-        callback(null, true);
-      } else {
-        if (config.isDevelopment) {
-          logger.warn('Origin blocked:', origin);
-          logger.debug('Allowed origins:', config.CORS_ALLOWED_ORIGINS);
-        }
-        callback(new Error('Not allowed by CORS'));
-      }
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
+// Apply CORS middleware
+app.use(corsMiddleware);
+app.use(additionalCorsHeaders);
 
 // Rate limiting and security middleware
 app.use(detectBots);
