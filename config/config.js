@@ -26,7 +26,9 @@ const getCorsOrigins = () => {
       'http://localhost:3000',
       'http://localhost:3001',
       'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001'
+      'http://127.0.0.1:3001',
+      'https://premiersquares.com',  // Allow production domain in dev for testing
+      'https://www.premiersquares.com'
     ];
   } else {
     // Test environment - no origins allowed

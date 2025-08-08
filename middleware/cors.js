@@ -55,13 +55,16 @@ const validateOrigin = (origin) => {
 const createCorsOptions = () => {
   return {
     origin: function (origin, callback) {
+      // Get request context if available
+      const req = this.req || this;
+      
       // Handle requests with no origin
       if (!origin) {
         if (config.isProduction) {
           logger.warn('CORS blocked: Request with no origin', {
-            ip: this.req?.ip,
-            userAgent: this.req?.get('User-Agent'),
-            endpoint: this.req?.originalUrl
+            ip: req?.ip,
+            userAgent: req?.get?.('User-Agent'),
+            endpoint: req?.originalUrl
           });
           return callback(new Error('Origin required in production'));
         } else {
@@ -77,9 +80,9 @@ const createCorsOptions = () => {
           origin,
           reason: validation.reason,
           code: validation.code,
-          ip: this.req?.ip,
-          userAgent: this.req?.get('User-Agent'),
-          endpoint: this.req?.originalUrl
+          ip: req?.ip,
+          userAgent: req?.get?.('User-Agent'),
+          endpoint: req?.originalUrl
         });
         return callback(new Error(validation.reason));
       }
@@ -91,14 +94,24 @@ const createCorsOptions = () => {
         }
         callback(null, true);
       } else {
+        // Log the actual configuration for debugging
         logger.warn('CORS blocked: Origin not in allowed list', {
           origin,
           allowedOrigins: config.CORS_ALLOWED_ORIGINS,
-          ip: this.req?.ip,
-          userAgent: this.req?.get('User-Agent'),
-          endpoint: this.req?.originalUrl
+          environment: config.NODE_ENV,
+          isProduction: config.isProduction,
+          ip: req?.ip,
+          userAgent: req?.get?.('User-Agent'),
+          endpoint: req?.originalUrl
         });
-        callback(new Error('Origin not allowed'));
+        
+        // In development, allow all origins for testing
+        if (config.isDevelopment) {
+          logger.debug('CORS allowing origin in development mode:', origin);
+          callback(null, true);
+        } else {
+          callback(new Error('Origin not allowed'));
+        }
       }
     },
     credentials: true,

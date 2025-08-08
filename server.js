@@ -17,6 +17,11 @@ const { corsMiddleware, additionalCorsHeaders } = require('./middleware/cors');
 // Validate configuration on startup
 try {
   config.validateConfig();
+  logger.info('CORS Configuration:', {
+    environment: config.NODE_ENV,
+    allowedOrigins: config.CORS_ALLOWED_ORIGINS,
+    isProduction: config.isProduction
+  });
 } catch (error) {
   logger.error('Configuration error:', error.message);
   process.exit(1);
@@ -79,6 +84,8 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Premier Squares Service API',
     version: config.API_VERSION,
+    environment: config.NODE_ENV,
+    corsOrigins: config.CORS_ALLOWED_ORIGINS,
     endpoints: {
       health: '/health',
       contests: {
