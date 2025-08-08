@@ -115,7 +115,7 @@ router.post('/', validate(createContestSchema), async (req, res) => {
 
 
 // GET /contests/:id - Get a specific contest
-router.get('/:id', validate(contestIdSchema, 'params'), async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
