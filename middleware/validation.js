@@ -39,23 +39,19 @@ const costPerSquareSchema = Joi.number()
 const nameSchema = Joi.string()
   .required()
   .min(1)
-  .max(50)
-  .pattern(/^[a-zA-Z0-9\s\-_\.]+$/)
+  .max(100)
   .messages({
     'string.empty': 'Name cannot be empty',
-    'string.pattern.base': 'Name can only contain letters, numbers, spaces, hyphens, underscores, and periods',
-    'string.max': 'Name cannot exceed 50 characters'
+    'string.max': 'Name cannot exceed 100 characters'
   });
 
 const namesArraySchema = Joi.array()
   .items(nameSchema)
   .min(1)
   .max(100)
-  .unique()
   .messages({
     'array.min': 'At least one name is required',
-    'array.max': 'Cannot exceed 100 names',
-    'array.unique': 'Names must be unique'
+    'array.max': 'Cannot exceed 100 names'
   });
 
 const contestIdSchema = Joi.string()
@@ -95,7 +91,9 @@ const validate = (schema, property = 'body') => {
         method: req.method,
         errors: errorDetails,
         ip: req.ip,
-        userAgent: req.get('User-Agent')
+        userAgent: req.get('User-Agent'),
+        data: data,
+        property: property
       });
 
       return res.status(400).json({
