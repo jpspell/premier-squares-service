@@ -146,41 +146,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /contests - Get all contests
-router.get('/', async (req, res) => {
-  try {
-    if (!db) {
-      return res.status(503).json({
-        error: 'Service Unavailable',
-        message: 'Firebase service is not configured'
-      });
-    }
 
-    const snapshot = await db.collection('contests').get();
-    const contests = [];
-    
-    snapshot.forEach(doc => {
-      contests.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
-
-    res.json({
-      success: true,
-      count: contests.length,
-      contests
-    });
-
-  } catch (error) {
-    console.error('❌ Fetch contests error:', error.message);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch contests',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
 
 // GET /contests/:id - Get a specific contest
 router.get('/:id', async (req, res) => {

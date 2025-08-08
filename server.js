@@ -26,7 +26,8 @@ const corsOptions = {
       'http://localhost:3000',        // Development
       'http://localhost:3001',        // Development
       'https://premiersquares.com',   // Production
-      'https://www.premiersquares.com' // Production
+      'https://www.premiersquares.com', // Production
+      'https://z414f9tg84.execute-api.us-east-1.amazonaws.com' // API Gateway
     ];
     
     if (allowedOrigins.includes(origin)) {
