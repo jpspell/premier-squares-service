@@ -119,10 +119,10 @@ const GRACEFUL_SHUTDOWN_TIMEOUT = parseInt(process.env.GRACEFUL_SHUTDOWN_TIMEOUT
 
 // Rate Limiting Configuration
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000; // 15 minutes
-const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100;
-const CREATE_CONTEST_LIMIT = parseInt(process.env.CREATE_CONTEST_LIMIT) || 1000; // 10 per hour
-const UPDATE_CONTEST_LIMIT = parseInt(process.env.UPDATE_CONTEST_LIMIT) || 100; // 20 per 15 minutes
-const START_CONTEST_LIMIT = parseInt(process.env.START_CONTEST_LIMIT) || 100; // 5 per hour
+const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 2000; // 2000 per 15 minutes
+const CREATE_CONTEST_LIMIT = parseInt(process.env.CREATE_CONTEST_LIMIT) || 100; // 100 per hour
+const UPDATE_CONTEST_LIMIT = parseInt(process.env.UPDATE_CONTEST_LIMIT) || 100; // 100 per 15 minutes
+const START_CONTEST_LIMIT = parseInt(process.env.START_CONTEST_LIMIT) || 100; // 100 per hour
 const DDOS_LIMIT = parseInt(process.env.DDOS_LIMIT) || 30; // 30 per minute
 
 // Logging Configuration
