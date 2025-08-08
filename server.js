@@ -3,6 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const config = require('./config/config');
 const logger = require('./utils/logger');
+const { validateContentType, validateRequestSize, validateRateLimit } = require('./middleware/validation');
+const { securityMiddleware, sanitizeInput } = require('./middleware/security');
 
 // Validate configuration on startup
 try {
@@ -14,8 +16,22 @@ try {
 
 const app = express();
 
-// Middleware
-app.use(helmet());
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
 
 // CORS configuration - secure for production
 const corsOptions = {
@@ -62,6 +78,13 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+
+// Security and validation middleware
+app.use(securityMiddleware);
+app.use(sanitizeInput);
+app.use(validateContentType);
+app.use(validateRequestSize);
+app.use(validateRateLimit);
 
 app.use(express.json({ limit: config.MAX_REQUEST_SIZE }));
 app.use(express.urlencoded({ extended: true, limit: config.MAX_URL_ENCODED_SIZE }));

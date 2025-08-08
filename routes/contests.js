@@ -1,41 +1,18 @@
 const express = require('express');
+const Joi = require('joi');
 const { db } = require('../config/firebase');
 const config = require('../config/config');
 const logger = require('../utils/logger');
+const { 
+  validate, 
+  eventIdSchema, 
+  costPerSquareSchema, 
+  namesArraySchema, 
+  contestIdSchema 
+} = require('../middleware/validation');
 const router = express.Router();
 
-// Validation helper functions
-const validateEventId = (eventId) => {
-  if (!eventId) {
-    return { isValid: false, error: 'eventId is required' };
-  }
-  return { isValid: true };
-};
-
-const validateCostPerSquare = (costPerSquare) => {
-  if (!costPerSquare || typeof costPerSquare !== 'number' || costPerSquare <= 0) {
-    return { isValid: false, error: 'costPerSquare is required and must be a positive number' };
-  }
-  return { isValid: true };
-};
-
-const validateNamesArray = (names) => {
-  if (!names || !Array.isArray(names)) {
-    return { isValid: false, error: 'names is required and must be an array' };
-  }
-  
-  if (names.length > 100) {
-    return { isValid: false, error: 'names array cannot exceed 100 items' };
-  }
-  
-  for (let i = 0; i < names.length; i++) {
-    if (typeof names[i] !== 'string' || names[i].trim() === '') {
-      return { isValid: false, error: `names[${i}] must be a non-empty string` };
-    }
-  }
-  
-  return { isValid: true };
-};
+// Note: Validation is now handled by Joi schemas in middleware/validation.js
 
 const validateContestExists = async (id) => {
   const doc = await db.collection('contests').doc(id).get();
@@ -84,29 +61,16 @@ const validateStartContest = (contestData) => {
   return validationErrors;
 };
 
+// Create contest schema
+const createContestSchema = Joi.object({
+  eventId: eventIdSchema,
+  costPerSquare: costPerSquareSchema
+});
+
 // POST /contests - Create a new contest entry
-router.post('/', async (req, res) => {
+router.post('/', validate(createContestSchema), async (req, res) => {
   try {
     const { eventId, costPerSquare } = req.body;
-
-    // Validate input
-    const eventIdValidation = validateEventId(eventId);
-    if (!eventIdValidation.isValid) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: eventIdValidation.error,
-        receivedBody: req.body
-      });
-    }
-
-    const costPerSquareValidation = validateCostPerSquare(costPerSquare);
-    if (!costPerSquareValidation.isValid) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: costPerSquareValidation.error,
-        receivedBody: req.body
-      });
-    }
 
     // Check if Firebase is available
     if (!db) {
@@ -151,7 +115,7 @@ router.post('/', async (req, res) => {
 
 
 // GET /contests/:id - Get a specific contest
-router.get('/:id', async (req, res) => {
+router.get('/:id', validate(contestIdSchema, 'params'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -188,21 +152,16 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Update contest schema
+const updateContestSchema = Joi.object({
+  names: namesArraySchema
+});
+
 // PUT /contests/:id - Update a contest
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(contestIdSchema, 'params'), validate(updateContestSchema), async (req, res) => {
   try {
     const { id } = req.params;
     const { names } = req.body;
-
-    // Validate input
-    const namesValidation = validateNamesArray(names);
-    if (!namesValidation.isValid) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: namesValidation.error,
-        receivedBody: req.body
-      });
-    }
 
     // Check if Firebase is available
     if (!db) {
@@ -262,7 +221,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // POST /contests/:id/start - Start a contest (validate all required fields)
-router.post('/:id/start', async (req, res) => {
+router.post('/:id/start', validate(contestIdSchema, 'params'), async (req, res) => {
   try {
     const { id } = req.params;
 
