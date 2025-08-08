@@ -51,16 +51,18 @@ const namesArraySchema = Joi.array()
   .max(100)
   .messages({
     'array.min': 'At least one name is required',
-    'array.max': 'Cannot exceed 100 names'
+    'array.max': 'Cannot exceed 100 names',
+    'array.base': 'Names must be an array'
   });
 
 const contestIdSchema = Joi.string()
   .required()
   .min(1)
-  .max(100) // Firebase IDs can be longer
+  .max(200) // Allow longer Firebase IDs
   .messages({
     'any.required': 'Contest ID is required',
-    'string.empty': 'Contest ID cannot be empty'
+    'string.empty': 'Contest ID cannot be empty',
+    'string.max': 'Contest ID is too long'
   });
 
 // Validation middleware factory
@@ -125,16 +127,16 @@ const validate = (schema, property = 'body') => {
 const validateContestId = (req, res, next) => {
   const { id } = req.params;
   
-  console.log('🔥 VALIDATE CONTEST ID 🔥');
-  console.log('ID:', id);
-  
   const { error } = contestIdSchema.validate(id);
   
   if (error) {
-    console.log('=== CONTEST ID VALIDATION FAILED ===');
-    console.log('ID:', id);
-    console.log('Error:', error.details[0].message);
-    console.log('===============================');
+    logger.warn('Contest ID validation failed:', {
+      id: id,
+      error: error.details[0].message,
+      endpoint: req.originalUrl,
+      method: req.method,
+      ip: req.ip
+    });
     
     return res.status(400).json({
       error: 'Validation Failed',
@@ -147,7 +149,6 @@ const validateContestId = (req, res, next) => {
     });
   }
   
-  console.log('✅ Contest ID validation passed');
   next();
 };
 
