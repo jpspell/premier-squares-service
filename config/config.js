@@ -114,6 +114,9 @@ const getSecurityConfig = () => {
 
 const SECURITY_CONFIG = getSecurityConfig();
 
+// Graceful Shutdown Configuration
+const GRACEFUL_SHUTDOWN_TIMEOUT = parseInt(process.env.GRACEFUL_SHUTDOWN_TIMEOUT) || 30000; // 30 seconds
+
 // Rate Limiting Configuration
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000; // 15 minutes
 const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100;
@@ -263,6 +266,7 @@ module.exports = {
   MAX_HEADER_SIZE,
   MAX_FIELD_SIZE,
   SECURITY_CONFIG,
+  GRACEFUL_SHUTDOWN_TIMEOUT,
   
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS,

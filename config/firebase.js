@@ -3,6 +3,9 @@ const config = require('./config');
 const logger = require('../utils/logger');
 const { handleError, ErrorTypes } = require('../utils/errorHandler');
 
+// Store Firebase app globally for graceful shutdown
+let firebaseApp = null;
+
 /**
  * Load Firebase service account credentials
  * @returns {Object|null} Service account object or null if not found
@@ -38,10 +41,14 @@ const initializeFirebase = () => {
     const serviceAccount = loadServiceAccount();
     
     if (serviceAccount) {
-      admin.initializeApp({
+      firebaseApp = admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         databaseURL: config.FIREBASE_DATABASE_URL || `https://${serviceAccount.project_id}.firebaseio.com`
       });
+      
+      // Store Firebase app globally for graceful shutdown
+      global.firebaseApp = firebaseApp;
+      
       logger.info('Firebase initialized successfully');
     } else {
       logger.warn('Firebase not configured - running in mock mode');

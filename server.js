@@ -20,6 +20,11 @@ const {
   validateSecurityHeaders, 
   monitorSecurityHeaders 
 } = require('./middleware/securityHeaders');
+const { 
+  GracefulShutdown, 
+  trackActiveRequests, 
+  healthCheckWithShutdown 
+} = require('./middleware/gracefulShutdown');
 
 // Validate configuration on startup
 try {
@@ -59,6 +64,9 @@ app.use(validateContentType);
 app.use(validateRequestSizes);
 app.use(monitorMemoryUsage);
 
+// Graceful shutdown middleware
+app.use(trackActiveRequests);
+
 app.use(express.json({ limit: config.MAX_REQUEST_SIZE }));
 app.use(express.urlencoded({ extended: true, limit: config.MAX_URL_ENCODED_SIZE }));
 
@@ -66,15 +74,8 @@ app.use(express.urlencoded({ extended: true, limit: config.MAX_URL_ENCODED_SIZE 
 const contestsRouter = require('./routes/contests');
 app.use('/contests', contestsRouter);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'Service is running',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
+// Health check endpoint with shutdown status
+app.get('/health', healthCheckWithShutdown);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -128,12 +129,19 @@ app.use('*', (req, res) => {
 // Global error handler
 app.use(expressErrorHandler);
 
-// Start server
-app.listen(config.PORT, () => {
+// Start server with graceful shutdown
+const server = app.listen(config.PORT, () => {
   logger.info(`Server running on http://localhost:${config.PORT}`);
   logger.info(`Environment: ${config.NODE_ENV}`);
   logger.info(`API Version: ${config.API_VERSION}`);
 });
+
+// Initialize graceful shutdown
+const gracefulShutdown = new GracefulShutdown();
+gracefulShutdown.init(server);
+
+// Store globally for health checks
+global.gracefulShutdown = gracefulShutdown;
 
 module.exports = app;
 
