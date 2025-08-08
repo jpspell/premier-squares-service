@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const logger = require('../utils/logger');
+const { handleValidationError } = require('../utils/errorHandler');
 
 // Sanitization helper functions
 const sanitizeString = (str) => {
@@ -68,24 +69,10 @@ const contestIdSchema = Joi.string()
 // Validation middleware factory
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
-    console.log('🔥 VALIDATE FUNCTION CALLED 🔥');
-    console.log('Schema:', schema.describe().type);
-    console.log('Property:', property);
-    
     const data = req[property];
-    
-          // Log the validation attempt
-      console.log('=== VALIDATION START ===');
-      console.log('Endpoint:', req.originalUrl);
-      console.log('Method:', req.method);
-      console.log('Property:', property);
-      console.log('Data:', JSON.stringify(data, null, 2));
-      console.log('=======================');
     
     // Sanitize the data first
     const sanitizedData = sanitizeInput(data);
-    
-
     
     const { error, value } = schema.validate(sanitizedData, {
       abortEarly: false,
@@ -101,20 +88,20 @@ const validate = (schema, property = 'body') => {
         type: detail.type
       }));
 
-      console.log('=== VALIDATION FAILED ===');
-      console.log('Endpoint:', req.originalUrl);
-      console.log('Method:', req.method);
-      console.log('Errors:', JSON.stringify(errorDetails, null, 2));
-      console.log('Original Data:', JSON.stringify(data, null, 2));
-      console.log('Sanitized Data:', JSON.stringify(sanitizedData, null, 2));
-      console.log('Property:', property);
-      console.log('========================');
+      // Create validation error
+      const validationError = new Error('Validation failed');
+      validationError.name = 'ValidationError';
+      validationError.details = errorDetails;
 
-      return res.status(400).json({
-        error: 'Validation Failed',
-        message: 'Invalid input data',
-        details: errorDetails
+      // Handle validation error with structured logging
+      const { statusCode, response } = handleValidationError(validationError, req, {
+        field: errorDetails[0]?.field,
+        value: errorDetails[0]?.value,
+        type: errorDetails[0]?.type,
+        allErrors: errorDetails
       });
+
+      return res.status(statusCode).json(response);
     }
 
     // Replace the original data with sanitized and validated data
@@ -130,23 +117,18 @@ const validateContestId = (req, res, next) => {
   const { error } = contestIdSchema.validate(id);
   
   if (error) {
-    logger.warn('Contest ID validation failed:', {
-      id: id,
-      error: error.details[0].message,
-      endpoint: req.originalUrl,
-      method: req.method,
-      ip: req.ip
+    // Create validation error
+    const validationError = new Error('Invalid contest ID');
+    validationError.name = 'ValidationError';
+    
+    // Handle validation error with structured logging
+    const { statusCode, response } = handleValidationError(validationError, req, {
+      field: 'id',
+      value: id,
+      type: 'contest_id_validation'
     });
     
-    return res.status(400).json({
-      error: 'Validation Failed',
-      message: 'Invalid contest ID',
-      details: [{
-        field: 'id',
-        message: error.details[0].message,
-        value: id
-      }]
-    });
+    return res.status(statusCode).json(response);
   }
   
   next();

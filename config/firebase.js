@@ -1,6 +1,7 @@
 const admin = require('firebase-admin');
 const config = require('./config');
 const logger = require('../utils/logger');
+const { handleError, ErrorTypes } = require('../utils/errorHandler');
 
 /**
  * Load Firebase service account credentials
@@ -12,7 +13,11 @@ const loadServiceAccount = () => {
     logger.info('Loading Firebase credentials from serviceAccountKey.json');
     return require('../serviceAccountKey.json');
   } catch (error) {
-    logger.error('Error loading Firebase credentials:', error.message);
+    // Use structured error handling
+    handleError(error, null, ErrorTypes.CONFIGURATION, {
+      operation: 'load_firebase_credentials',
+      file: 'serviceAccountKey.json'
+    });
     logger.warn('No Firebase credentials found - running in mock mode');
     return null;
   }
@@ -42,7 +47,11 @@ const initializeFirebase = () => {
       logger.warn('Firebase not configured - running in mock mode');
     }
   } catch (error) {
-    logger.error('Firebase initialization error:', error.message);
+    // Use structured error handling
+    handleError(error, null, ErrorTypes.CONFIGURATION, {
+      operation: 'initialize_firebase',
+      serviceAccount: serviceAccount ? 'loaded' : 'not_found'
+    });
     // Don't throw - let the app continue without Firebase
   }
 };
@@ -61,7 +70,12 @@ try {
     throw new Error('Firebase not initialized');
   }
 } catch (error) {
-  logger.error('Firestore initialization error:', error.message);
+  // Use structured error handling
+  handleError(error, null, ErrorTypes.CONFIGURATION, {
+    operation: 'initialize_firestore',
+    firebaseApps: admin.apps?.length || 0
+  });
+  
   // Create a mock db object for graceful degradation
   db = {
     collection: () => ({

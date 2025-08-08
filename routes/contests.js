@@ -16,6 +16,11 @@ const {
   updateContestLimiter, 
   startContestLimiter 
 } = require('../middleware/rateLimit');
+const { 
+  asyncErrorHandler, 
+  handleFirebaseError, 
+  ErrorTypes 
+} = require('../utils/errorHandler');
 const router = express.Router();
 
 // Note: Validation is now handled by Joi schemas in middleware/validation.js
@@ -74,27 +79,26 @@ const createContestSchema = Joi.object({
 });
 
 // POST /contests - Create a new contest entry
-router.post('/', createContestLimiter, validate(createContestSchema), async (req, res) => {
+router.post('/', createContestLimiter, validate(createContestSchema), asyncErrorHandler(async (req, res) => {
+  const { eventId, costPerSquare } = req.body;
+
+  // Check if Firebase is available
+  if (!db) {
+    const error = new Error('Firebase service is not configured');
+    error.name = 'ServiceUnavailableError';
+    throw error;
+  }
+
+  // Create contest entry
+  const contestData = {
+    eventId,
+    costPerSquare,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    status: 'new'
+  };
+
   try {
-    const { eventId, costPerSquare } = req.body;
-
-    // Check if Firebase is available
-    if (!db) {
-      return res.status(503).json({
-        error: 'Service Unavailable',
-        message: 'Firebase service is not configured'
-      });
-    }
-
-    // Create contest entry
-    const contestData = {
-      eventId,
-      costPerSquare,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: 'new'
-    };
-
     // Add to Firebase collection
     const docRef = await db.collection('contests').add(contestData);
 
@@ -107,37 +111,32 @@ router.post('/', createContestLimiter, validate(createContestSchema), async (req
         id: docRef.id
       }
     });
-
   } catch (error) {
-    logger.error('Create contest error:', error.message);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Failed to create contest entry',
-      details: config.isDevelopment ? error.message : undefined
-    });
+    // Handle Firebase-specific errors
+    const { statusCode, response } = handleFirebaseError(error, req, 'create_contest');
+    res.status(statusCode).json(response);
   }
-});
+}));
 
 
 
 // GET /contests/:id - Get a specific contest
-router.get('/:id', validateContestId, async (req, res) => {
+router.get('/:id', validateContestId, asyncErrorHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!db) {
+    const error = new Error('Firebase service is not configured');
+    error.name = 'ServiceUnavailableError';
+    throw error;
+  }
+
   try {
-    const { id } = req.params;
-
-    if (!db) {
-      return res.status(503).json({
-        error: 'Service Unavailable',
-        message: 'Firebase service is not configured'
-      });
-    }
-
     const contestValidation = await validateContestExists(id);
     if (!contestValidation.exists) {
-      return res.status(404).json({
-        error: 'Not Found',
-        message: contestValidation.error
-      });
+      const error = new Error('Contest not found');
+      error.name = 'NotFoundError';
+      error.code = 'not-found';
+      throw error;
     }
 
     res.json({
@@ -147,16 +146,12 @@ router.get('/:id', validateContestId, async (req, res) => {
         ...contestValidation.doc.data()
       }
     });
-
   } catch (error) {
-    logger.error('Fetch contest error:', error.message);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch contest',
-      details: config.isDevelopment ? error.message : undefined
-    });
+    // Handle Firebase-specific errors
+    const { statusCode, response } = handleFirebaseError(error, req, 'get_contest');
+    res.status(statusCode).json(response);
   }
-});
+}));
 
 // Update contest schema
 const updateContestSchema = Joi.object({
@@ -164,36 +159,33 @@ const updateContestSchema = Joi.object({
 });
 
 // PUT /contests/:id - Update a contest
-router.put('/:id', updateContestLimiter, validateContestId, validate(updateContestSchema), async (req, res) => {
+router.put('/:id', updateContestLimiter, validateContestId, validate(updateContestSchema), asyncErrorHandler(async (req, res) => {
+  const { id } = req.params;
+  const { names } = req.body;
+
+  if (!db) {
+    const error = new Error('Firebase service is not configured');
+    error.name = 'ServiceUnavailableError';
+    throw error;
+  }
+
   try {
-    const { id } = req.params;
-    const { names } = req.body;
-
-    // Check if Firebase is available
-    if (!db) {
-      return res.status(503).json({
-        error: 'Service Unavailable',
-        message: 'Firebase service is not configured'
-      });
-    }
-
     // Check if contest exists and validate status
     const contestValidation = await validateContestExists(id);
     if (!contestValidation.exists) {
-      return res.status(404).json({
-        error: 'Not Found',
-        message: contestValidation.error
-      });
+      const error = new Error('Contest not found');
+      error.name = 'NotFoundError';
+      error.code = 'not-found';
+      throw error;
     }
 
     const contestData = contestValidation.doc.data();
     const statusValidation = validateContestStatus(contestData.status);
     if (!statusValidation.isValid) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: statusValidation.error,
-        currentStatus: contestData.status
-      });
+      const error = new Error(statusValidation.error);
+      error.name = 'ValidationError';
+      error.details = { currentStatus: contestData.status };
+      throw error;
     }
 
     // Update contest with names array
@@ -215,37 +207,31 @@ router.put('/:id', updateContestLimiter, validateContestId, validate(updateConte
         ...updatedDoc.data()
       }
     });
-
   } catch (error) {
-    logger.error('Update contest error:', error.message);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Failed to update contest',
-      details: config.isDevelopment ? error.message : undefined
-    });
+    // Handle Firebase-specific errors
+    const { statusCode, response } = handleFirebaseError(error, req, 'update_contest');
+    res.status(statusCode).json(response);
   }
-});
+}));
 
 // POST /contests/:id/start - Start a contest (validate all required fields)
-router.post('/:id/start', startContestLimiter, validateContestId, async (req, res) => {
+router.post('/:id/start', startContestLimiter, validateContestId, asyncErrorHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!db) {
+    const error = new Error('Firebase service is not configured');
+    error.name = 'ServiceUnavailableError';
+    throw error;
+  }
+
   try {
-    const { id } = req.params;
-
-    // Check if Firebase is available
-    if (!db) {
-      return res.status(503).json({
-        error: 'Service Unavailable',
-        message: 'Firebase service is not configured'
-      });
-    }
-
     // Get the contest document
     const contestValidation = await validateContestExists(id);
     if (!contestValidation.exists) {
-      return res.status(404).json({
-        error: 'Not Found',
-        message: contestValidation.error
-      });
+      const error = new Error('Contest not found');
+      error.name = 'NotFoundError';
+      error.code = 'not-found';
+      throw error;
     }
 
     const contestData = contestValidation.doc.data();
@@ -255,9 +241,9 @@ router.post('/:id/start', startContestLimiter, validateContestId, async (req, re
 
     // If there are validation errors, return them
     if (validationErrors.length > 0) {
-      return res.status(400).json({
-        error: 'Validation Failed',
-        message: 'Contest cannot start due to missing or invalid data',
+      const error = new Error('Contest cannot start due to missing or invalid data');
+      error.name = 'ValidationError';
+      error.details = {
         validationErrors,
         contestData: {
           id: contestValidation.doc.id,
@@ -266,7 +252,8 @@ router.post('/:id/start', startContestLimiter, validateContestId, async (req, re
           namesCount: contestData.names ? contestData.names.length : 0,
           status: contestData.status
         }
-      });
+      };
+      throw error;
     }
 
     // Shuffle the names array randomly
@@ -290,15 +277,11 @@ router.post('/:id/start', startContestLimiter, validateContestId, async (req, re
         ...updatedDoc.data()
       }
     });
-
   } catch (error) {
-    logger.error('Start contest error:', error.message);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Failed to start contest',
-      details: config.isDevelopment ? error.message : undefined
-    });
+    // Handle Firebase-specific errors
+    const { statusCode, response } = handleFirebaseError(error, req, 'start_contest');
+    res.status(statusCode).json(response);
   }
-});
+}));
 
 module.exports = router;

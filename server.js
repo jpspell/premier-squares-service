@@ -11,6 +11,7 @@ const {
   blockSuspiciousIPs, 
   detectBots 
 } = require('./middleware/rateLimit');
+const { expressErrorHandler } = require('./utils/errorHandler');
 
 // Validate configuration on startup
 try {
@@ -134,20 +135,19 @@ app.get('/', (req, res) => {
 
 // 404 handler
 app.use('*', (req, res) => {
+  const error = new Error(`Endpoint not found: ${req.originalUrl}`);
+  error.name = 'NotFoundError';
   res.status(404).json({
-    error: 'Endpoint not found',
-    message: `The endpoint ${req.originalUrl} does not exist`
+    error: 'NOT_FOUND_ERROR',
+    message: 'The requested endpoint does not exist',
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  logger.error('Unhandled error:', err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: 'Something went wrong on the server'
-  });
-});
+// Global error handler
+app.use(expressErrorHandler);
 
 // Start server
 app.listen(config.PORT, () => {
