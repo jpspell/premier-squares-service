@@ -27,8 +27,15 @@ const corsOptions = {
       'http://localhost:3001',        // Development
       'https://premiersquares.com',   // Production
       'https://www.premiersquares.com', // Production
+      'https://z414f9tg84.execute-api.us-east-1.amazonaws.com', // API Gateway
       'https://z414f9tg84.execute-api.us-east-1.amazonaws.com/prod' // API Gateway with path
     ];
+    
+    // TEMPORARY: Allow API Gateway requests for debugging
+    if (origin.includes('execute-api.us-east-1.amazonaws.com')) {
+      console.log('✅ API Gateway origin allowed (debug):', origin);
+      return callback(null, true);
+    }
     
     // Check exact match first
     if (allowedOrigins.includes(origin)) {
@@ -45,6 +52,7 @@ const corsOptions = {
         callback(null, true);
       } else {
         console.log('❌ Origin blocked:', origin);
+        console.log('🔍 Allowed origins:', allowedOrigins);
         callback(new Error('Not allowed by CORS'));
       }
     }
