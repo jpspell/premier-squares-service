@@ -13,6 +13,7 @@ const {
 } = require('./middleware/rateLimit');
 const { expressErrorHandler } = require('./utils/errorHandler');
 const { corsMiddleware, additionalCorsHeaders } = require('./middleware/cors');
+const { validateRequestSizes, monitorMemoryUsage } = require('./middleware/requestSize');
 
 // Validate configuration on startup
 try {
@@ -60,7 +61,8 @@ app.use(generalLimiter);
 app.use(securityMiddleware);
 app.use(sanitizeInput);
 app.use(validateContentType);
-app.use(validateRequestSize);
+app.use(validateRequestSizes);
+app.use(monitorMemoryUsage);
 
 app.use(express.json({ limit: config.MAX_REQUEST_SIZE }));
 app.use(express.urlencoded({ extended: true, limit: config.MAX_URL_ENCODED_SIZE }));
@@ -86,6 +88,13 @@ app.get('/', (req, res) => {
     version: config.API_VERSION,
     environment: config.NODE_ENV,
     corsOrigins: config.CORS_ALLOWED_ORIGINS,
+    requestSizeLimits: {
+      maxRequestBody: config.MAX_REQUEST_SIZE,
+      maxUrlEncoded: config.MAX_URL_ENCODED_SIZE,
+      maxQueryString: config.MAX_QUERY_STRING_SIZE + ' bytes',
+      maxHeaderSize: config.MAX_HEADER_SIZE + ' bytes',
+      maxFieldSize: config.MAX_FIELD_SIZE + ' bytes'
+    },
     endpoints: {
       health: '/health',
       contests: {

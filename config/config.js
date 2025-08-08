@@ -45,8 +45,33 @@ const FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY;
 const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
 
 // Security Configuration
-const MAX_REQUEST_SIZE = process.env.MAX_REQUEST_SIZE || '10mb';
-const MAX_URL_ENCODED_SIZE = process.env.MAX_URL_ENCODED_SIZE || '10mb';
+const getRequestSizeLimits = () => {
+  if (NODE_ENV === 'production') {
+    return {
+      MAX_REQUEST_SIZE: process.env.MAX_REQUEST_SIZE || '1mb',
+      MAX_URL_ENCODED_SIZE: process.env.MAX_URL_ENCODED_SIZE || '1mb',
+      MAX_QUERY_STRING_SIZE: process.env.MAX_QUERY_STRING_SIZE || '2048',
+      MAX_HEADER_SIZE: process.env.MAX_HEADER_SIZE || '8192',
+      MAX_FIELD_SIZE: process.env.MAX_FIELD_SIZE || '1024'
+    };
+  } else {
+    return {
+      MAX_REQUEST_SIZE: process.env.MAX_REQUEST_SIZE || '10mb',
+      MAX_URL_ENCODED_SIZE: process.env.MAX_URL_ENCODED_SIZE || '10mb',
+      MAX_QUERY_STRING_SIZE: process.env.MAX_QUERY_STRING_SIZE || '4096',
+      MAX_HEADER_SIZE: process.env.MAX_HEADER_SIZE || '16384',
+      MAX_FIELD_SIZE: process.env.MAX_FIELD_SIZE || '2048'
+    };
+  }
+};
+
+const {
+  MAX_REQUEST_SIZE,
+  MAX_URL_ENCODED_SIZE,
+  MAX_QUERY_STRING_SIZE,
+  MAX_HEADER_SIZE,
+  MAX_FIELD_SIZE
+} = getRequestSizeLimits();
 
 // Rate Limiting Configuration
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000; // 15 minutes
@@ -103,6 +128,57 @@ const validateConfig = () => {
     errors.push('RATE_LIMIT_MAX_REQUESTS must be a positive number');
   }
   
+  // Validate request size limits
+  const validateSizeLimit = (size, name) => {
+    if (typeof size === 'string') {
+      const match = size.match(/^(\d+)([kmg]?b)$/i);
+      if (!match) {
+        errors.push(`${name} must be a valid size (e.g., 1mb, 10kb)`);
+        return;
+      }
+      const value = parseInt(match[1]);
+      const unit = match[2].toLowerCase();
+      const multipliers = { 'b': 1, 'kb': 1024, 'mb': 1024*1024, 'gb': 1024*1024*1024 };
+      const bytes = value * multipliers[unit];
+      
+      if (bytes <= 0) {
+        errors.push(`${name} must be greater than 0`);
+      }
+      
+      // Production limits
+      if (NODE_ENV === 'production') {
+        if (name === 'MAX_REQUEST_SIZE' && bytes > 5 * 1024 * 1024) { // 5MB
+          errors.push(`${name} cannot exceed 5MB in production`);
+        }
+        if (name === 'MAX_URL_ENCODED_SIZE' && bytes > 2 * 1024 * 1024) { // 2MB
+          errors.push(`${name} cannot exceed 2MB in production`);
+        }
+      }
+    } else if (typeof size === 'number') {
+      if (size <= 0) {
+        errors.push(`${name} must be greater than 0`);
+      }
+    } else {
+      errors.push(`${name} must be a valid size`);
+    }
+  };
+  
+  validateSizeLimit(MAX_REQUEST_SIZE, 'MAX_REQUEST_SIZE');
+  validateSizeLimit(MAX_URL_ENCODED_SIZE, 'MAX_URL_ENCODED_SIZE');
+  
+  // Validate numeric limits
+  if (MAX_QUERY_STRING_SIZE <= 0 || MAX_QUERY_STRING_SIZE > 10000) {
+    errors.push('MAX_QUERY_STRING_SIZE must be between 1 and 10000');
+  }
+  
+  if (MAX_HEADER_SIZE <= 0 || MAX_HEADER_SIZE > 32768) {
+    errors.push('MAX_HEADER_SIZE must be between 1 and 32768');
+  }
+  
+  if (MAX_FIELD_SIZE <= 0 || MAX_FIELD_SIZE > 8192) {
+    errors.push('MAX_FIELD_SIZE must be between 1 and 8192');
+  }
+  
   if (errors.length > 0) {
     throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
   }
@@ -127,6 +203,9 @@ module.exports = {
   // Security
   MAX_REQUEST_SIZE,
   MAX_URL_ENCODED_SIZE,
+  MAX_QUERY_STRING_SIZE,
+  MAX_HEADER_SIZE,
+  MAX_FIELD_SIZE,
   
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS,

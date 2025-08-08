@@ -176,22 +176,9 @@ const validateContentType = (req, res, next) => {
   next();
 };
 
-// Request size validation
+// Legacy request size validation (deprecated - use requestSize middleware instead)
 const validateRequestSize = (req, res, next) => {
-  const contentLength = parseInt(req.get('Content-Length') || '0');
-  const maxSize = 1024 * 1024; // 1MB
-  
-  if (contentLength > maxSize) {
-    logger.warn('Request too large:', { 
-      contentLength, 
-      ip: req.ip, 
-      method: req.method 
-    });
-    return res.status(413).json({
-      error: 'Payload Too Large',
-      message: 'Request body too large'
-    });
-  }
+  logger.warn('Deprecated validateRequestSize called - use requestSize middleware instead');
   next();
 };
 
