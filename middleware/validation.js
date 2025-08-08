@@ -66,6 +66,10 @@ const contestIdSchema = Joi.string()
 // Validation middleware factory
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
+    console.log('🔥 VALIDATE FUNCTION CALLED 🔥');
+    console.log('Schema:', schema.describe().type);
+    console.log('Property:', property);
+    
     const data = req[property];
     
           // Log the validation attempt
