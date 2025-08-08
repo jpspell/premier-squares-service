@@ -1,6 +1,7 @@
 const express = require('express');
 const { db } = require('../config/firebase');
 const config = require('../config/config');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Validation helper functions
@@ -138,7 +139,7 @@ router.post('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Create contest error:', error.message);
+    logger.error('Create contest error:', error.message);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to create contest entry',
@@ -178,7 +179,7 @@ router.get('/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Fetch contest error:', error.message);
+    logger.error('Fetch contest error:', error.message);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to fetch contest',
@@ -251,7 +252,7 @@ router.put('/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Update contest error:', error.message);
+    logger.error('Update contest error:', error.message);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to update contest',
@@ -326,12 +327,12 @@ router.post('/:id/start', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Start contest error:', error.message);
-          res.status(500).json({
-        error: 'Internal Server Error',
-        message: 'Failed to start contest',
-        details: config.isDevelopment ? error.message : undefined
-      });
+    logger.error('Start contest error:', error.message);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to start contest',
+      details: config.isDevelopment ? error.message : undefined
+    });
   }
 });
 

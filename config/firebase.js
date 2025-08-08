@@ -1,5 +1,6 @@
 const admin = require('firebase-admin');
 const config = require('./config');
+const logger = require('../utils/logger');
 
 /**
  * Load Firebase service account credentials
@@ -8,11 +9,11 @@ const config = require('./config');
 const loadServiceAccount = () => {
   try {
     // Use JSON file directly (bypass environment variables)
-    console.log('🔐 Loading Firebase credentials from serviceAccountKey.json');
+    logger.info('Loading Firebase credentials from serviceAccountKey.json');
     return require('../serviceAccountKey.json');
   } catch (error) {
-    console.error('❌ Error loading Firebase credentials:', error.message);
-    console.warn('⚠️  No Firebase credentials found - running in mock mode');
+    logger.error('Error loading Firebase credentials:', error.message);
+    logger.warn('No Firebase credentials found - running in mock mode');
     return null;
   }
 };
@@ -25,7 +26,7 @@ const initializeFirebase = () => {
     // Check if Firebase is already initialized
     const apps = admin.apps;
     if (apps && apps.length > 0) {
-      console.log('✅ Firebase already initialized');
+      logger.info('Firebase already initialized');
       return;
     }
 
@@ -36,12 +37,12 @@ const initializeFirebase = () => {
         credential: admin.credential.cert(serviceAccount),
         databaseURL: config.FIREBASE_DATABASE_URL || `https://${serviceAccount.project_id}.firebaseio.com`
       });
-      console.log('✅ Firebase initialized successfully');
+      logger.info('Firebase initialized successfully');
     } else {
-      console.warn('⚠️  Firebase not configured - running in mock mode');
+      logger.warn('Firebase not configured - running in mock mode');
     }
   } catch (error) {
-    console.error('❌ Firebase initialization error:', error.message);
+    logger.error('Firebase initialization error:', error.message);
     // Don't throw - let the app continue without Firebase
   }
 };
@@ -55,12 +56,12 @@ try {
   // Check if Firebase is initialized before trying to get Firestore
   if (admin.apps.length > 0) {
     db = admin.firestore();
-    console.log('✅ Firestore initialized successfully');
+    logger.info('Firestore initialized successfully');
   } else {
     throw new Error('Firebase not initialized');
   }
 } catch (error) {
-  console.error('❌ Firestore initialization error:', error.message);
+  logger.error('Firestore initialization error:', error.message);
   // Create a mock db object for graceful degradation
   db = {
     collection: () => ({
@@ -72,7 +73,7 @@ try {
       })
     })
   };
-  console.log('⚠️  Using mock Firestore - Firebase not available');
+  logger.warn('Using mock Firestore - Firebase not available');
 }
 
 module.exports = { db };

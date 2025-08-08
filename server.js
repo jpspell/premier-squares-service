@@ -2,12 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const config = require('./config/config');
+const logger = require('./utils/logger');
 
 // Validate configuration on startup
 try {
   config.validateConfig();
 } catch (error) {
-  console.error('❌ Configuration error:', error.message);
+  logger.error('Configuration error:', error.message);
   process.exit(1);
 }
 
@@ -20,13 +21,13 @@ app.use(helmet());
 const corsOptions = {
   origin: function (origin, callback) {
     if (config.isDevelopment) {
-      console.log('🔍 CORS Request from origin:', origin);
+      logger.debug('CORS Request from origin:', origin);
     }
     
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) {
       if (config.isDevelopment) {
-        console.log('✅ No origin - allowing request');
+        logger.debug('No origin - allowing request');
       }
       return callback(null, true);
     }
@@ -34,7 +35,7 @@ const corsOptions = {
     // Check exact match first
     if (config.CORS_ALLOWED_ORIGINS.includes(origin)) {
       if (config.isDevelopment) {
-        console.log('✅ Origin allowed:', origin);
+        logger.debug('Origin allowed:', origin);
       }
       callback(null, true);
     } else {
@@ -45,13 +46,13 @@ const corsOptions = {
       
       if (isAllowed) {
         if (config.isDevelopment) {
-          console.log('✅ Origin allowed (partial match):', origin);
+          logger.debug('Origin allowed (partial match):', origin);
         }
         callback(null, true);
       } else {
         if (config.isDevelopment) {
-          console.log('❌ Origin blocked:', origin);
-          console.log('🔍 Allowed origins:', config.CORS_ALLOWED_ORIGINS);
+          logger.warn('Origin blocked:', origin);
+          logger.debug('Allowed origins:', config.CORS_ALLOWED_ORIGINS);
         }
         callback(new Error('Not allowed by CORS'));
       }
@@ -107,7 +108,7 @@ app.use('*', (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error('Unhandled error:', err.stack);
   res.status(500).json({
     error: 'Internal Server Error',
     message: 'Something went wrong on the server'
@@ -116,9 +117,9 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(config.PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${config.PORT}`);
-  console.log(`🌍 Environment: ${config.NODE_ENV}`);
-  console.log(`📋 API Version: ${config.API_VERSION}`);
+  logger.info(`Server running on http://localhost:${config.PORT}`);
+  logger.info(`Environment: ${config.NODE_ENV}`);
+  logger.info(`API Version: ${config.API_VERSION}`);
 });
 
 module.exports = app;
