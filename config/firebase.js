@@ -7,17 +7,7 @@ const config = require('./config');
  */
 const loadServiceAccount = () => {
   try {
-    // First try environment variables
-    if (config.FIREBASE_PROJECT_ID && config.FIREBASE_PRIVATE_KEY && config.FIREBASE_CLIENT_EMAIL) {
-      console.log('🔐 Loading Firebase credentials from environment variables');
-      return {
-        project_id: config.FIREBASE_PROJECT_ID,
-        private_key: config.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        client_email: config.FIREBASE_CLIENT_EMAIL
-      };
-    }
-    
-    // Fallback to JSON file
+    // Use JSON file directly (bypass environment variables)
     console.log('🔐 Loading Firebase credentials from serviceAccountKey.json');
     return require('../serviceAccountKey.json');
   } catch (error) {
