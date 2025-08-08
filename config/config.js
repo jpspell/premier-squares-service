@@ -73,6 +73,47 @@ const {
   MAX_FIELD_SIZE
 } = getRequestSizeLimits();
 
+// Security Headers Configuration
+const getSecurityConfig = () => {
+  if (NODE_ENV === 'production') {
+    return {
+      // Production - strict security
+      CSP_ENABLED: true,
+      HSTS_ENABLED: true,
+      HSTS_MAX_AGE: 31536000, // 1 year
+      HSTS_INCLUDE_SUBDOMAINS: true,
+      HSTS_PRELOAD: true,
+      CONTENT_TYPE_NOSNIFF: true,
+      FRAME_DENY: true,
+      XSS_PROTECTION: true,
+      REFERRER_POLICY: 'strict-origin-when-cross-origin',
+      PERMISSIONS_POLICY: 'geolocation=(), microphone=(), camera=()',
+      CROSS_ORIGIN_EMBEDDER_POLICY: 'require-corp',
+      CROSS_ORIGIN_OPENER_POLICY: 'same-origin',
+      CROSS_ORIGIN_RESOURCE_POLICY: 'same-origin'
+    };
+  } else {
+    return {
+      // Development - more permissive for debugging
+      CSP_ENABLED: true,
+      HSTS_ENABLED: false, // Disabled in dev to avoid HTTPS requirement
+      HSTS_MAX_AGE: 0,
+      HSTS_INCLUDE_SUBDOMAINS: false,
+      HSTS_PRELOAD: false,
+      CONTENT_TYPE_NOSNIFF: true,
+      FRAME_DENY: true,
+      XSS_PROTECTION: true,
+      REFERRER_POLICY: 'no-referrer-when-downgrade',
+      PERMISSIONS_POLICY: 'geolocation=(), microphone=(), camera=()',
+      CROSS_ORIGIN_EMBEDDER_POLICY: 'unsafe-none',
+      CROSS_ORIGIN_OPENER_POLICY: 'unsafe-none',
+      CROSS_ORIGIN_RESOURCE_POLICY: 'cross-origin'
+    };
+  }
+};
+
+const SECURITY_CONFIG = getSecurityConfig();
+
 // Rate Limiting Configuration
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000; // 15 minutes
 const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100;
@@ -179,6 +220,21 @@ const validateConfig = () => {
     errors.push('MAX_FIELD_SIZE must be between 1 and 8192');
   }
   
+  // Validate security configuration
+  if (NODE_ENV === 'production') {
+    if (!SECURITY_CONFIG.CSP_ENABLED) {
+      errors.push('Content Security Policy must be enabled in production');
+    }
+    
+    if (!SECURITY_CONFIG.HSTS_ENABLED) {
+      errors.push('HTTP Strict Transport Security must be enabled in production');
+    }
+    
+    if (SECURITY_CONFIG.REFERRER_POLICY !== 'strict-origin-when-cross-origin') {
+      errors.push('Referrer Policy must be strict-origin-when-cross-origin in production');
+    }
+  }
+  
   if (errors.length > 0) {
     throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
   }
@@ -206,6 +262,7 @@ module.exports = {
   MAX_QUERY_STRING_SIZE,
   MAX_HEADER_SIZE,
   MAX_FIELD_SIZE,
+  SECURITY_CONFIG,
   
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS,

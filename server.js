@@ -14,6 +14,12 @@ const {
 const { expressErrorHandler } = require('./utils/errorHandler');
 const { corsMiddleware, additionalCorsHeaders } = require('./middleware/cors');
 const { validateRequestSizes, monitorMemoryUsage } = require('./middleware/requestSize');
+const { 
+  helmetMiddleware, 
+  additionalSecurityHeaders, 
+  validateSecurityHeaders, 
+  monitorSecurityHeaders 
+} = require('./middleware/securityHeaders');
 
 // Validate configuration on startup
 try {
@@ -30,22 +36,11 @@ try {
 
 const app = express();
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  }
-}));
+// Security headers middleware
+app.use(helmetMiddleware);
+app.use(additionalSecurityHeaders);
+app.use(validateSecurityHeaders);
+app.use(monitorSecurityHeaders);
 
 // Apply CORS middleware
 app.use(corsMiddleware);
@@ -94,6 +89,15 @@ app.get('/', (req, res) => {
       maxQueryString: config.MAX_QUERY_STRING_SIZE + ' bytes',
       maxHeaderSize: config.MAX_HEADER_SIZE + ' bytes',
       maxFieldSize: config.MAX_FIELD_SIZE + ' bytes'
+    },
+    securityHeaders: {
+      cspEnabled: config.SECURITY_CONFIG.CSP_ENABLED,
+      hstsEnabled: config.SECURITY_CONFIG.HSTS_ENABLED,
+      referrerPolicy: config.SECURITY_CONFIG.REFERRER_POLICY,
+      permissionsPolicy: config.SECURITY_CONFIG.PERMISSIONS_POLICY,
+      crossOriginEmbedderPolicy: config.SECURITY_CONFIG.CROSS_ORIGIN_EMBEDDER_POLICY,
+      crossOriginOpenerPolicy: config.SECURITY_CONFIG.CROSS_ORIGIN_OPENER_POLICY,
+      crossOriginResourcePolicy: config.SECURITY_CONFIG.CROSS_ORIGIN_RESOURCE_POLICY
     },
     endpoints: {
       health: '/health',
