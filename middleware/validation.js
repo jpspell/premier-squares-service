@@ -60,11 +60,11 @@ const namesArraySchema = Joi.array()
 
 const contestIdSchema = Joi.string()
   .required()
-  .pattern(/^[a-zA-Z0-9_-]+$/)
-  .max(50)
+  .min(1)
+  .max(100) // Firebase IDs can be longer
   .messages({
-    'string.pattern.base': 'Contest ID can only contain letters, numbers, hyphens, and underscores',
-    'any.required': 'Contest ID is required'
+    'any.required': 'Contest ID is required',
+    'string.empty': 'Contest ID cannot be empty'
   });
 
 // Validation middleware factory
@@ -74,6 +74,8 @@ const validate = (schema, property = 'body') => {
     
     // Sanitize the data first
     const sanitizedData = sanitizeInput(data);
+    
+
     
     const { error, value } = schema.validate(sanitizedData, {
       abortEarly: false,
