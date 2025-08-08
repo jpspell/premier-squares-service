@@ -27,15 +27,26 @@ const corsOptions = {
       'http://localhost:3001',        // Development
       'https://premiersquares.com',   // Production
       'https://www.premiersquares.com', // Production
-      'https://z414f9tg84.execute-api.us-east-1.amazonaws.com' // API Gateway
+      'https://z414f9tg84.execute-api.us-east-1.amazonaws.com/prod' // API Gateway with path
     ];
     
+    // Check exact match first
     if (allowedOrigins.includes(origin)) {
       console.log('✅ Origin allowed:', origin);
       callback(null, true);
     } else {
-      console.log('❌ Origin blocked:', origin);
-      callback(new Error('Not allowed by CORS'));
+      // Check if origin starts with any of our allowed domains
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        return origin.startsWith(allowedOrigin);
+      });
+      
+      if (isAllowed) {
+        console.log('✅ Origin allowed (partial match):', origin);
+        callback(null, true);
+      } else {
+        console.log('❌ Origin blocked:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
     }
   },
   credentials: true,
