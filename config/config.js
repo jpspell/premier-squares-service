@@ -28,8 +28,14 @@ const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
 // Security Configuration
 const MAX_REQUEST_SIZE = process.env.MAX_REQUEST_SIZE || '10mb';
 const MAX_URL_ENCODED_SIZE = process.env.MAX_URL_ENCODED_SIZE || '10mb';
+
+// Rate Limiting Configuration
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000; // 15 minutes
 const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100;
+const CREATE_CONTEST_LIMIT = parseInt(process.env.CREATE_CONTEST_LIMIT) || 10; // 10 per hour
+const UPDATE_CONTEST_LIMIT = parseInt(process.env.UPDATE_CONTEST_LIMIT) || 20; // 20 per 15 minutes
+const START_CONTEST_LIMIT = parseInt(process.env.START_CONTEST_LIMIT) || 5; // 5 per hour
+const DDOS_LIMIT = parseInt(process.env.DDOS_LIMIT) || 30; // 30 per minute
 
 // Logging Configuration
 const LOG_LEVEL = process.env.LOG_LEVEL || (NODE_ENV === 'production' ? 'info' : 'debug');
@@ -83,8 +89,14 @@ module.exports = {
   // Security
   MAX_REQUEST_SIZE,
   MAX_URL_ENCODED_SIZE,
+  
+  // Rate Limiting
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,
+  CREATE_CONTEST_LIMIT,
+  UPDATE_CONTEST_LIMIT,
+  START_CONTEST_LIMIT,
+  DDOS_LIMIT,
   
   // Logging
   LOG_LEVEL,

@@ -11,6 +11,11 @@ const {
   namesArraySchema, 
   contestIdSchema 
 } = require('../middleware/validation');
+const { 
+  createContestLimiter, 
+  updateContestLimiter, 
+  startContestLimiter 
+} = require('../middleware/rateLimit');
 const router = express.Router();
 
 // Note: Validation is now handled by Joi schemas in middleware/validation.js
@@ -69,7 +74,7 @@ const createContestSchema = Joi.object({
 });
 
 // POST /contests - Create a new contest entry
-router.post('/', validate(createContestSchema), async (req, res) => {
+router.post('/', createContestLimiter, validate(createContestSchema), async (req, res) => {
   try {
     const { eventId, costPerSquare } = req.body;
 
@@ -159,7 +164,7 @@ const updateContestSchema = Joi.object({
 });
 
 // PUT /contests/:id - Update a contest
-router.put('/:id', validateContestId, validate(updateContestSchema), async (req, res) => {
+router.put('/:id', updateContestLimiter, validateContestId, validate(updateContestSchema), async (req, res) => {
   try {
     const { id } = req.params;
     const { names } = req.body;
@@ -222,7 +227,7 @@ router.put('/:id', validateContestId, validate(updateContestSchema), async (req,
 });
 
 // POST /contests/:id/start - Start a contest (validate all required fields)
-router.post('/:id/start', validateContestId, async (req, res) => {
+router.post('/:id/start', startContestLimiter, validateContestId, async (req, res) => {
   try {
     const { id } = req.params;
 

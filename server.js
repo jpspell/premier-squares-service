@@ -3,8 +3,14 @@ const cors = require('cors');
 const helmet = require('helmet');
 const config = require('./config/config');
 const logger = require('./utils/logger');
-const { validateContentType, validateRequestSize, validateRateLimit } = require('./middleware/validation');
+const { validateContentType, validateRequestSize } = require('./middleware/validation');
 const { securityMiddleware, sanitizeInput } = require('./middleware/security');
+const { 
+  generalLimiter, 
+  ddosLimiter, 
+  blockSuspiciousIPs, 
+  detectBots 
+} = require('./middleware/rateLimit');
 
 // Validate configuration on startup
 try {
@@ -79,12 +85,17 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Rate limiting and security middleware
+app.use(detectBots);
+app.use(blockSuspiciousIPs);
+app.use(ddosLimiter);
+app.use(generalLimiter);
+
 // Security and validation middleware
 app.use(securityMiddleware);
 app.use(sanitizeInput);
 app.use(validateContentType);
 app.use(validateRequestSize);
-app.use(validateRateLimit);
 
 app.use(express.json({ limit: config.MAX_REQUEST_SIZE }));
 app.use(express.urlencoded({ extended: true, limit: config.MAX_URL_ENCODED_SIZE }));

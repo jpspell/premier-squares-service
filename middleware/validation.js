@@ -173,25 +173,7 @@ const sanitizeInput = (data) => {
   return data;
 };
 
-// Rate limiting validation
-const validateRateLimit = (req, res, next) => {
-  const clientIP = req.ip || req.connection.remoteAddress;
-  const userAgent = req.get('User-Agent') || 'unknown';
-  
-  // Log suspicious patterns
-  if (userAgent.includes('bot') || userAgent.includes('crawler')) {
-    logger.warn('Bot/crawler detected:', { ip: clientIP, userAgent });
-  }
-  
-  if (req.body && Object.keys(req.body).length > 10) {
-    logger.warn('Large request body detected:', { 
-      ip: clientIP, 
-      bodySize: JSON.stringify(req.body).length 
-    });
-  }
-  
-  next();
-};
+
 
 // Content-Type validation
 const validateContentType = (req, res, next) => {
@@ -243,7 +225,6 @@ module.exports = {
   // Validation middleware
   validate,
   validateContestId,
-  validateRateLimit,
   validateContentType,
   validateRequestSize,
   
