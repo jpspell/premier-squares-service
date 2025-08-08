@@ -68,13 +68,13 @@ const validate = (schema, property = 'body') => {
   return (req, res, next) => {
     const data = req[property];
     
-    // Log the validation attempt
-    logger.info('Starting validation:', {
-      endpoint: req.originalUrl,
-      method: req.method,
-      property: property,
-      data: data
-    });
+          // Log the validation attempt
+      console.log('=== VALIDATION START ===');
+      console.log('Endpoint:', req.originalUrl);
+      console.log('Method:', req.method);
+      console.log('Property:', property);
+      console.log('Data:', JSON.stringify(data, null, 2));
+      console.log('=======================');
     
     // Sanitize the data first
     const sanitizedData = sanitizeInput(data);
@@ -95,16 +95,14 @@ const validate = (schema, property = 'body') => {
         type: detail.type
       }));
 
-      logger.error('Validation failed:', {
-        endpoint: req.originalUrl,
-        method: req.method,
-        errors: errorDetails,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        originalData: data,
-        sanitizedData: sanitizedData,
-        property: property
-      });
+      console.log('=== VALIDATION FAILED ===');
+      console.log('Endpoint:', req.originalUrl);
+      console.log('Method:', req.method);
+      console.log('Errors:', JSON.stringify(errorDetails, null, 2));
+      console.log('Original Data:', JSON.stringify(data, null, 2));
+      console.log('Sanitized Data:', JSON.stringify(sanitizedData, null, 2));
+      console.log('Property:', property);
+      console.log('========================');
 
       return res.status(400).json({
         error: 'Validation Failed',
