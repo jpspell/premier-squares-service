@@ -121,6 +121,36 @@ const validate = (schema, property = 'body') => {
   };
 };
 
+// Specific validation for contest ID in params
+const validateContestId = (req, res, next) => {
+  const { id } = req.params;
+  
+  console.log('🔥 VALIDATE CONTEST ID 🔥');
+  console.log('ID:', id);
+  
+  const { error } = contestIdSchema.validate(id);
+  
+  if (error) {
+    console.log('=== CONTEST ID VALIDATION FAILED ===');
+    console.log('ID:', id);
+    console.log('Error:', error.details[0].message);
+    console.log('===============================');
+    
+    return res.status(400).json({
+      error: 'Validation Failed',
+      message: 'Invalid contest ID',
+      details: [{
+        field: 'id',
+        message: error.details[0].message,
+        value: id
+      }]
+    });
+  }
+  
+  console.log('✅ Contest ID validation passed');
+  next();
+};
+
 // Sanitization function
 const sanitizeInput = (data) => {
   if (typeof data === 'string') {
@@ -211,6 +241,7 @@ module.exports = {
   
   // Validation middleware
   validate,
+  validateContestId,
   validateRateLimit,
   validateContentType,
   validateRequestSize,

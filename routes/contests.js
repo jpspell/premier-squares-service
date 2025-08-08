@@ -5,6 +5,7 @@ const config = require('../config/config');
 const logger = require('../utils/logger');
 const { 
   validate, 
+  validateContestId,
   eventIdSchema, 
   costPerSquareSchema, 
   namesArraySchema, 
@@ -115,7 +116,7 @@ router.post('/', validate(createContestSchema), async (req, res) => {
 
 
 // GET /contests/:id - Get a specific contest
-router.get('/:id', validate(contestIdSchema, 'params'), async (req, res) => {
+router.get('/:id', validateContestId, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -158,7 +159,7 @@ const updateContestSchema = Joi.object({
 });
 
 // PUT /contests/:id - Update a contest
-router.put('/:id', validate(contestIdSchema, 'params'), validate(updateContestSchema), async (req, res) => {
+router.put('/:id', validateContestId, validate(updateContestSchema), async (req, res) => {
   try {
     const { id } = req.params;
     const { names } = req.body;
@@ -221,7 +222,7 @@ router.put('/:id', validate(contestIdSchema, 'params'), validate(updateContestSc
 });
 
 // POST /contests/:id/start - Start a contest (validate all required fields)
-router.post('/:id/start', validate(contestIdSchema, 'params'), async (req, res) => {
+router.post('/:id/start', validateContestId, async (req, res) => {
   try {
     const { id } = req.params;
 
