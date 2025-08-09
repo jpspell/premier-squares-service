@@ -28,12 +28,12 @@ const eventIdSchema = Joi.string()
 const costPerSquareSchema = Joi.number()
   .required()
   .positive()
-  .max(10000)
+  .max(1000)
   .precision(2)
   .messages({
     'number.base': 'costPerSquare must be a number',
     'number.positive': 'costPerSquare must be a positive number',
-    'number.max': 'costPerSquare cannot exceed $10,000',
+    'number.max': 'costPerSquare cannot exceed $1,000',
     'any.required': 'costPerSquare is required'
   });
 
