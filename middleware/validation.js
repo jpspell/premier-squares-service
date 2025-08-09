@@ -66,6 +66,90 @@ const contestIdSchema = Joi.string()
     'string.max': 'Contest ID is too long'
   });
 
+const quarterPrizesSchema = Joi.object({
+  quarter1: Joi.number()
+    .required()
+    .min(0)
+    .max(100000)
+    .precision(2)
+    .messages({
+      'number.base': 'quarter1 prize must be a number',
+      'number.min': 'quarter1 prize cannot be negative',
+      'number.max': 'quarter1 prize cannot exceed $100,000',
+      'any.required': 'quarter1 prize is required'
+    }),
+  quarter2: Joi.number()
+    .required()
+    .min(0)
+    .max(100000)
+    .precision(2)
+    .messages({
+      'number.base': 'quarter2 prize must be a number',
+      'number.min': 'quarter2 prize cannot be negative',
+      'number.max': 'quarter2 prize cannot exceed $100,000',
+      'any.required': 'quarter2 prize is required'
+    }),
+  quarter3: Joi.number()
+    .required()
+    .min(0)
+    .max(100000)
+    .precision(2)
+    .messages({
+      'number.base': 'quarter3 prize must be a number',
+      'number.min': 'quarter3 prize cannot be negative',
+      'number.max': 'quarter3 prize cannot exceed $100,000',
+      'any.required': 'quarter3 prize is required'
+    }),
+  quarter4: Joi.number()
+    .required()
+    .min(0)
+    .max(100000)
+    .precision(2)
+    .messages({
+      'number.base': 'quarter4 prize must be a number',
+      'number.min': 'quarter4 prize cannot be negative',
+      'number.max': 'quarter4 prize cannot exceed $100,000',
+      'any.required': 'quarter4 prize is required'
+    }),
+  totalPot: Joi.number()
+    .required()
+    .min(0)
+    .max(100000)
+    .precision(2)
+    .messages({
+      'number.base': 'totalPot must be a number',
+      'number.min': 'totalPot cannot be negative',
+      'number.max': 'totalPot cannot exceed $100,000',
+      'any.required': 'totalPot is required'
+    }),
+  payoutMode: Joi.string()
+    .required()
+    .valid('standard', 'custom')
+    .messages({
+      'string.base': 'payoutMode must be a string',
+      'any.only': 'payoutMode must be either "standard" or "custom"',
+      'any.required': 'payoutMode is required'
+    })
+}).required()
+.custom((value, helpers) => {
+  // Validate that total quarter payouts don't exceed total pot
+  const totalQuarterPayouts = value.quarter1 + value.quarter2 + value.quarter3 + value.quarter4;
+  
+  if (totalQuarterPayouts > value.totalPot) {
+    return helpers.error('quarterPrizes.totalExceeded', {
+      totalPayouts: totalQuarterPayouts,
+      totalPot: value.totalPot
+    });
+  }
+  
+  return value;
+})
+.messages({
+  'object.base': 'quarterPrizes must be an object',
+  'any.required': 'quarterPrizes is required',
+  'quarterPrizes.totalExceeded': 'Total quarter payouts (${{#totalPayouts}}) cannot exceed total pot (${{#totalPot}})'
+});
+
 // Validation middleware factory
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
@@ -190,6 +274,7 @@ module.exports = {
   nameSchema,
   namesArraySchema,
   contestIdSchema,
+  quarterPrizesSchema,
   
   // Validation middleware
   validate,

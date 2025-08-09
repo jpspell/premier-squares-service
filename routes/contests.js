@@ -9,7 +9,8 @@ const {
   eventIdSchema, 
   costPerSquareSchema, 
   namesArraySchema, 
-  contestIdSchema 
+  contestIdSchema,
+  quarterPrizesSchema
 } = require('../middleware/validation');
 const { 
   createContestLimiter, 
@@ -75,12 +76,13 @@ const validateStartContest = (contestData) => {
 // Create contest schema
 const createContestSchema = Joi.object({
   eventId: eventIdSchema,
-  costPerSquare: costPerSquareSchema
+  costPerSquare: costPerSquareSchema,
+  quarterPrizes: quarterPrizesSchema
 });
 
 // POST /contests - Create a new contest entry
 router.post('/', createContestLimiter, validate(createContestSchema), asyncErrorHandler(async (req, res) => {
-  const { eventId, costPerSquare } = req.body;
+  const { eventId, costPerSquare, quarterPrizes } = req.body;
 
   // Check if Firebase is available
   if (!db) {
@@ -93,6 +95,7 @@ router.post('/', createContestLimiter, validate(createContestSchema), asyncError
   const contestData = {
     eventId,
     costPerSquare,
+    quarterPrizes,
     createdAt: new Date(),
     updatedAt: new Date(),
     status: 'new'
