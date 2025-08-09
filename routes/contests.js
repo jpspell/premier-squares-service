@@ -256,8 +256,12 @@ router.post('/:id/start', startContestLimiter, validateContestId, asyncErrorHand
       throw error;
     }
 
-    // Shuffle the names array randomly
-    const shuffledNames = [...contestData.names].sort(() => Math.random() - 0.5);
+    // Shuffle the names array randomly using Fisher-Yates algorithm for uniform distribution
+    const shuffledNames = [...contestData.names];
+    for (let i = shuffledNames.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledNames[i], shuffledNames[j]] = [shuffledNames[j], shuffledNames[i]];
+    }
 
     // Update contest status to 'active' with shuffled names
     await db.collection('contests').doc(id).update({
