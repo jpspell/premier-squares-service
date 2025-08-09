@@ -1,15 +1,12 @@
 const express = require('express');
 const Joi = require('joi');
 const { db } = require('../config/firebase');
-const config = require('../config/config');
-const logger = require('../utils/logger');
 const { 
   validate, 
   validateContestId,
   eventIdSchema, 
   costPerSquareSchema, 
-  namesArraySchema, 
-  contestIdSchema,
+  namesArraySchema,
   quarterPrizesSchema
 } = require('../middleware/validation');
 const { 
@@ -19,12 +16,9 @@ const {
 } = require('../middleware/rateLimit');
 const { 
   asyncErrorHandler, 
-  handleFirebaseError, 
-  ErrorTypes 
+  handleFirebaseError
 } = require('../utils/errorHandler');
 const router = express.Router();
-
-// Note: Validation is now handled by Joi schemas in middleware/validation.js
 
 const validateContestExists = async (id) => {
   const doc = await db.collection('contests').doc(id).get();
@@ -120,8 +114,6 @@ router.post('/', createContestLimiter, validate(createContestSchema), asyncError
     res.status(statusCode).json(response);
   }
 }));
-
-
 
 // GET /contests/:id - Get a specific contest
 router.get('/:id', validateContestId, asyncErrorHandler(async (req, res) => {

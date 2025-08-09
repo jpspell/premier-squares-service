@@ -260,12 +260,6 @@ const validateContentType = (req, res, next) => {
   next();
 };
 
-// Legacy request size validation (deprecated - use requestSize middleware instead)
-const validateRequestSize = (req, res, next) => {
-  logger.warn('Deprecated validateRequestSize called - use requestSize middleware instead');
-  next();
-};
-
 // Export validation schemas and middleware
 module.exports = {
   // Schemas
@@ -280,7 +274,6 @@ module.exports = {
   validate,
   validateContestId,
   validateContentType,
-  validateRequestSize,
   
   // Sanitization
   sanitizeInput,
