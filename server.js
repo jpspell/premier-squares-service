@@ -72,7 +72,10 @@ app.use(express.urlencoded({ extended: true, limit: config.MAX_URL_ENCODED_SIZE 
 
 // Routes
 const contestsRouter = require('./routes/contests');
+const bagBuilderRouter = require('./routes/bagBuilder');
+
 app.use('/contests', contestsRouter);
+app.use('/bagbuilder', bagBuilderRouter);
 
 // Health check endpoint with shutdown status
 app.get('/health', healthCheckWithShutdown);
@@ -108,6 +111,10 @@ app.get('/', (req, res) => {
         getById: 'GET /contests/:id',
         update: 'PUT /contests/:id',
         start: 'POST /contests/:id/start'
+      },
+      bagBuilder: {
+        setWinner: 'POST /bagbuilder/winner/:name',
+        getWinner: 'GET /bagbuilder/winner'
       }
     }
   });
